@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>폭풍의 증권시장</title>
+<style>
+  :root{
+    --bg:#0B0E13; --panel:#12161D; --panel2:#181D26; --line:#262C38;
+    --txt:#E8EAED; --txt2:#8A93A3; --txt3:#5B6472;
+    --up:#2ECC71; --down:#E85D4A; --amber:#F0A93C; --amber-d:#3A2A10;
+    --mono:'SF Mono','Consolas',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,'Pretendard','Malgun Gothic',sans-serif;}
+  button{font-family:inherit;cursor:pointer;}
+  textarea,input,select{font-family:inherit;}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px;}
+  .center-wrap{max-width:480px;margin:0 auto;padding:20px;}
+
+  .landing{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:28px;padding:24px;}
+  .logo{font-size:15px;letter-spacing:6px;color:var(--amber);font-weight:700;}
+  .title{font-size:30px;font-weight:700;margin:0;}
+  .sub{color:var(--txt2);font-size:14px;margin-top:-14px;}
+  .roomrow{display:flex;gap:8px;align-items:center;}
+  .roomrow input{background:var(--panel);border:1px solid var(--line);color:var(--txt);padding:10px 14px;border-radius:8px;font-size:15px;width:180px;text-align:center;letter-spacing:2px;}
+  .roles{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:420px;}
+  .role-btn{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 10px;color:var(--txt);display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .role-btn:active{border-color:var(--amber);}
+  .role-btn .ico{font-size:26px;}
+  .role-btn .name{font-size:14px;font-weight:600;}
+  .role-btn .desc{font-size:11px;color:var(--txt3);}
+
+  .topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 4px;border-bottom:1px solid var(--line);margin-bottom:18px;gap:8px;flex-wrap:wrap;}
+  .topbar .tag{font-size:12px;color:var(--txt3);letter-spacing:1px;}
+  .topbar .back{color:var(--txt2);font-size:13px;background:none;border:none;}
+  .phase-badge{background:var(--amber-d);color:var(--amber);font-size:12px;padding:4px 10px;border-radius:20px;font-weight:600;letter-spacing:1px;}
+
+  .clock-hero{text-align:center;padding:20px 0 8px;}
+  .clock-num{font-family:var(--mono);font-size:56px;font-weight:700;letter-spacing:2px;}
+  .clock-label{color:var(--txt2);font-size:13px;margin-top:4px;}
+
+  .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-top:20px;}
+  .stock-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;}
+  .stock-name{font-size:14px;color:var(--txt2);margin-bottom:6px;}
+  .stock-price{font-family:var(--mono);font-size:30px;font-weight:700;}
+  .stock-chg{font-family:var(--mono);font-size:13px;margin-top:4px;}
+  .up{color:var(--up);} .down{color:var(--down);} .flat{color:var(--txt3);}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px;}
+  .row{display:flex;justify-content:space-between;align-items:center;}
+  label{font-size:12px;color:var(--txt2);display:block;margin-bottom:6px;}
+  select,input[type=text],input[type=number],textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:10px 12px;border-radius:8px;font-size:14px;}
+  textarea{font-family:var(--mono);font-size:12px;min-height:110px;resize:vertical;}
+  .btn{background:var(--amber);color:#241A05;border:none;border-radius:8px;padding:11px 16px;font-size:14px;font-weight:700;}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt);}
+  .btn.small{padding:7px 12px;font-size:12px;}
+  .btn.buy{background:var(--up);color:#052012;}
+  .btn.sell{background:var(--down);color:#2A0906;}
+  .btn:disabled{opacity:.35;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .asset-total{font-family:var(--mono);font-size:34px;font-weight:700;margin:4px 0;}
+  .hint{font-size:12px;color:var(--txt3);margin-top:6px;line-height:1.5;}
+  .holding-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;}
+  .trade-controls{display:flex;gap:8px;margin-top:8px;align-items:center;}
+  .trade-controls input{width:64px;text-align:center;}
+  .log-item{font-size:12px;color:var(--txt3);padding:4px 0;border-bottom:1px dashed var(--line);}
+  .empty{color:var(--txt3);font-size:13px;text-align:center;padding:20px;}
+  .timer-ring{font-family:var(--mono);font-size:20px;color:var(--amber);}
+  .timer-ring.warn{color:var(--down);}
+  .remain-tag{font-size:11px;color:var(--txt3);}
+  .rank-row{display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--line);font-size:14px;}
+  .winner{color:var(--amber);font-weight:700;}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCSROfeRwYZ_Z5hlFoChkhGTB5k6pZBKZY",
+  authDomain: "qwer-45bf8.firebaseapp.com",
+  databaseURL: "https://qwer-45bf8-default-rtdb.asia-southeast1.firebasedatabase.app/",
+  projectId: "qwer-45bf8",
+  storageBucket: "qwer-45bf8.firebasestorage.app",
+  messagingSenderId: "685026358575",
+  appId: "1:685026358575:web:dcb20ed2a5c04fb68c1dda"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const STOCKS = [
+  {id:'s1', name:'지각통신'},
+  {id:'s2', name:'헌금은행'},
+  {id:'s3', name:'철야전자'},
+  {id:'s4', name:'설교건설'},
+  {id:'s5', name:'졸음생명'},
+];
+const START_PRICE = 2000;
+const TOTAL_SHARES = 15;
+const MAX_HOLD_PER_STOCK = 7;
+const START_CASH = 10000;
+const EXCHANGE_SESSION_SEC = 20;
+const DEFAULT_ROUND_MIN = 30;
+
+let roomId = 'power';
+let role = null;
+let myPlayerId = null;
+let pollTimer = null;
+let exTimer = null;
+
+function fmt(n){ return Math.round(n).toLocaleString('ko-KR'); }
+function uid(){ return 'p_' + Math.random().toString(36).slice(2,9); }
+
+function defaultState(){
+  const remaining = {}; STOCKS.forEach(s=>remaining[s.id]=TOTAL_SHARES);
+  return {
+    round1Start: null, round2Start: null, round1Duration: null, round2Duration: null, settled: false,
+    events: {
+      round1: [
+        {minute:5, stockId:'s1', delta:300},
+        {minute:5, stockId:'s2', delta:-200},
+        {minute:5, stockId:'s3', delta:400},
+        {minute:10, stockId:'s4', delta:250},
+        {minute:10, stockId:'s5', delta:-300},
+        {minute:10, stockId:'s1', delta:-150},
+        {minute:15, stockId:'s2', delta:500},
+        {minute:15, stockId:'s3', delta:-250},
+        {minute:15, stockId:'s4', delta:200},
+        {minute:20, stockId:'s5', delta:350},
+        {minute:20, stockId:'s1', delta:200},
+        {minute:20, stockId:'s2', delta:-300},
+        {minute:25, stockId:'s3', delta:300},
+        {minute:25, stockId:'s4', delta:-400},
+        {minute:30, stockId:'s5', delta:450},
+        {minute:18, stockId:'s3', delta:900}
+      ],
+      round2: [
+        {minute:5, stockId:'s1', delta:-200},
+        {minute:5, stockId:'s2', delta:300},
+        {minute:5, stockId:'s3', delta:-400},
+        {minute:10, stockId:'s4', delta:350},
+        {minute:10, stockId:'s5', delta:200},
+        {minute:10, stockId:'s1', delta:250},
+        {minute:15, stockId:'s2', delta:-350},
+        {minute:15, stockId:'s3', delta:300},
+        {minute:15, stockId:'s4', delta:-200},
+        {minute:20, stockId:'s5', delta:-250},
+        {minute:20, stockId:'s1', delta:300},
+        {minute:20, stockId:'s2', delta:400},
+        {minute:25, stockId:'s3', delta:-300},
+        {minute:25, stockId:'s4', delta:450},
+        {minute:30, stockId:'s5', delta:300},
+        {minute:22, stockId:'s1', delta:-700},
+        {minute:22, stockId:'s2', delta:-700},
+        {minute:22, stockId:'s3', delta:-700},
+        {minute:22, stockId:'s4', delta:-700},
+        {minute:22, stockId:'s5', delta:-700}
+      ]
+    },
+    remaining,
+    players: {},
+    log: []
+  };
+}
+
+function roomRef(){ return db.ref('rooms/'+roomId); }
+function normalizeState(val){
+  const base = defaultState();
+  if(!val) return base;
+  return {
+    round1Start: val.round1Start||null,
+    round2Start: val.round2Start||null,
+    round1Duration: val.round1Duration||null,
+    round2Duration: val.round2Duration||null,
+    settled: !!val.settled,
+    events: {
+      round1: Array.isArray(val.events && val.events.round1) ? val.events.round1 : base.events.round1,
+      round2: Array.isArray(val.events && val.events.round2) ? val.events.round2 : base.events.round2,
+    },
+    remaining: (val.remaining && typeof val.remaining==='object') ? val.remaining : base.remaining,
+    players: (val.players && typeof val.players==='object') ? val.players : {},
+    log: Array.isArray(val.log) ? val.log : []
+  };
+}
+async function loadState(){
+  try{
+    const snap = await roomRef().once('value');
+    const val = snap.val();
+    if(!val){ const init = defaultState(); await saveState(init); return init; }
+    return normalizeState(val);
+  }catch(e){ console.error('불러오기 실패', e); return defaultState(); }
+}
+async function saveState(state){
+  try{ await roomRef().set(state); }
+  catch(e){ console.error('저장 실패', e); }
+}
+async function mutateState(mutator){
+  let errorMsg = null;
+  const result = await roomRef().transaction(current=>{
+    errorMsg = null;
+    const state = normalizeState(current);
+    const ok = mutator(state, msg=>{ errorMsg = msg; });
+    if(ok===false) return undefined; // abort transaction, keep data unchanged
+    return state;
+  });
+  return { errorMsg, state: result.snapshot ? result.snapshot.val() : null };
+}
+function pushLog(state, text){
+  state.log.unshift({t: Date.now(), text});
+  state.log = state.log.slice(0, 30);
+}
+
+/* ---------- 게임시각 / 가격 로직 ---------- */
+function elapsedMin(startTs, durationMin){
+  if(!startTs) return 0;
+  const dur = durationMin || DEFAULT_ROUND_MIN;
+  const realElapsed = (Date.now()-startTs)/60000; // 실제 경과(분), 압축 없이 그대로 사용
+  return Math.min(dur, realElapsed);
+}
+function round1Elapsed(state){ return elapsedMin(state.round1Start, state.round1Duration); }
+function round2Elapsed(state){ return elapsedMin(state.round2Start, state.round2Duration); }
+function round1Dur(state){ return state.round1Duration || DEFAULT_ROUND_MIN; }
+function round2Dur(state){ return state.round2Duration || DEFAULT_ROUND_MIN; }
+
+function currentPhase(state){
+  if(!state.round1Start) return 'setup';
+  if(round1Elapsed(state) < round1Dur(state)) return 'round1';
+  if(!state.round2Start) return 'intermission';
+  if(round2Elapsed(state) < round2Dur(state)) return 'round2';
+  return state.settled ? 'ended' : 'round2_over';
+}
+
+function priceAtElapsed(stock, state, roundNum, minutes){
+  if(roundNum===1){
+    let p = START_PRICE;
+    (state.events.round1||[]).filter(e=>e.stockId===stock.id && e.minute<=minutes).forEach(e=>p+=e.delta);
+    return Math.max(0, p);
+  } else {
+    let p = round1FinalPrice(stock, state);
+    (state.events.round2||[]).filter(e=>e.stockId===stock.id && e.minute<=minutes).forEach(e=>p+=e.delta);
+    return Math.max(0, p);
+  }
+}
+function round1FinalPrice(stock, state){
+  let p = START_PRICE;
+  (state.events.round1||[]).forEach(e=>{ if(e.stockId===stock.id) p+=e.delta; });
+  return Math.max(0, p);
+}
+function priceAt(stock, state){
+  const phase = currentPhase(state);
+  if(phase==='setup') return START_PRICE;
+  if(phase==='round1') return priceAtElapsed(stock, state, 1, round1Elapsed(state));
+  if(phase==='intermission') return round1FinalPrice(stock, state);
+  if(phase==='round2') return priceAtElapsed(stock, state, 2, round2Elapsed(state));
+  return priceAtElapsed(stock, state, 2, round2Dur(state)); // round2_over / ended
+}
+function previousPrice(stock, state){
+  const phase = currentPhase(state);
+  if(phase==='round1') return priceAtElapsed(stock, state, 1, Math.max(0, round1Elapsed(state)-5));
+  if(phase==='round2') return priceAtElapsed(stock, state, 2, Math.max(0, round2Elapsed(state)-5));
+  return priceAt(stock, state);
+}
+function clockLabel(baseHour, baseMinute, offset){
+  const total = baseMinute + Math.round(offset);
+  const h = baseHour + Math.floor(total/60);
+  const m = total % 60;
+  return `${h}시 ${String(m).padStart(2,'0')}분`;
+}
+function gameClockDisplay(state){
+  const phase = currentPhase(state);
+  if(phase==='setup') return '1시 00분 대기중';
+  if(phase==='round1') return clockLabel(1,0, round1Elapsed(state));
+  if(phase==='intermission') return '1시 30분 (휴식)';
+  if(phase==='round2') return clockLabel(1,30, round2Elapsed(state));
+  return '2시 00분';
+}
+function phaseLabel(phase){
+  return {setup:'게임 대기 중', round1:'1라운드 진행 중', intermission:'인터미션 · 2라운드 준비',
+    round2:'2라운드 진행 중', round2_over:'2라운드 종료 · 정산 대기', ended:'게임 종료'}[phase] || phase;
+}
+function totalAssets(p, state){
+  let total = p.cash;
+  STOCKS.forEach(s=>{ total += (p.holdings[s.id]||0) * priceAt(s, state); });
+  return total;
+}
+
+/* ---------- 라우터 ---------- */
+function render(){
+  stopPoll();
+  const app = document.getElementById('app');
+  if(!role){ app.innerHTML = landingHTML(); bindLanding(); return; }
+  if(role==='main') return renderMain();
+  if(role==='personal') return renderPersonal();
+  if(role==='exchange') return renderExchange();
+  if(role==='admin') return renderAdmin();
+}
+function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } if(exTimer){ clearInterval(exTimer); exTimer=null; } }
+function goHome(){ role=null; myPlayerId=null; render(); }
+
+function landingHTML(){
+  return `
+  <div class="landing">
+    <div class="logo">청년부 여름 수련회</div>
+    <h1 class="title">폭풍의 증권시장</h1>
+    <div class="sub">화면을 선택하세요</div>
+    <div class="roomrow"><span style="font-size:13px;color:var(--txt3)">방 코드</span><input id="roomInput" value="${roomId}"></div>
+    <div class="roles">
+      <button class="role-btn" data-role="main"><div class="ico">📺</div><div class="name">메인 화면</div><div class="desc">전광판</div></button>
+      <button class="role-btn" data-role="personal"><div class="ico">📱</div><div class="name">개인 화면</div><div class="desc">내 자산</div></button>
+      <button class="role-btn" data-role="exchange"><div class="ico">💱</div><div class="name">거래소</div><div class="desc">매수/매도</div></button>
+      <button class="role-btn" data-role="admin"><div class="ico">🎛️</div><div class="name">게임마스터</div><div class="desc">진행/설정</div></button>
+    </div>
+  </div>`;
+}
+const STAFF_PIN = '2026';
+function bindLanding(){
+  document.getElementById('roomInput').addEventListener('change', e=>{ roomId = e.target.value.trim() || 'power'; });
+  document.querySelectorAll('.role-btn').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const r = b.dataset.role;
+      if(r==='admin' || r==='main'){
+        const pin = prompt('진행팀 전용 화면입니다. PIN을 입력하세요.');
+        if(pin !== STAFF_PIN){ if(pin!==null) alert('PIN이 올바르지 않습니다.'); return; }
+      }
+      roomId = document.getElementById('roomInput').value.trim() || 'power';
+      role = r; render();
+    });
+  });
+}
+
+/* ---------- 메인 화면 (전광판, 자산정보 비공개) ---------- */
+async function renderMain(){
+  const app = document.getElementById('app');
+  app.innerHTML = `<div class="wrap"><div id="mainBody" class="empty">불러오는 중...</div></div>`;
+  const draw = async ()=>{
+    const state = await loadState();
+    const phase = currentPhase(state);
+    document.getElementById('mainBody').innerHTML = `
+      <div class="topbar">
+        <span class="tag">방: ${roomId}</span>
+        <span class="phase-badge">${phaseLabel(phase)}</span>
+        <button class="back" onclick="goHome()">← 나가기</button>
+      </div>
+      <div class="clock-hero">
+        <div class="clock-num">${gameClockDisplay(state)}</div>
+        <div class="clock-label">게임시각</div>
+      </div>
+      <div class="board">
+        ${STOCKS.map(s=>{
+          const price = priceAt(s, state);
+          const prev = previousPrice(s, state);
+          const diff = price - prev;
+          const cls = diff>0?'up':diff<0?'down':'flat';
+          const arrow = diff>0?'▲':diff<0?'▼':'―';
+          return `<div class="stock-card">
+            <div class="stock-name">${s.name}</div>
+            <div class="stock-price">${fmt(price)}원</div>
+            <div class="stock-chg ${cls}">${arrow} ${fmt(Math.abs(diff))}원</div>
+          </div>`;
+        }).join('')}
+      </div>
+      ${phase==='ended' ? rankingBlockHTML(state) : `<div class="hint" style="text-align:center;margin-top:18px;">보유 현금과 주식은 게임 종료 전까지 공개되지 않습니다.</div>`}
+    `;
+  };
+  await draw();
+  pollTimer = setInterval(draw, 4000);
+}
+function rankingBlockHTML(state){
+  const list = Object.values(state.players).map(p=>({name:p.name, cash:p.cash})).sort((a,b)=>b.cash-a.cash);
+  if(!list.length) return '';
+  return `<div class="card" style="margin-top:18px;">
+    <label>최종 결과 (보유 현금 기준)</label>
+    ${list.map((p,i)=>`<div class="rank-row"><span class="${i===0?'winner':''}">${i===0?'🏆 ':''}${p.name}</span><span style="font-family:var(--mono)">${fmt(p.cash)}원</span></div>`).join('')}
+    <div class="hint">우승: ${list[0].name} · 탈락후보: ${list[list.length-1].name}</div>
+  </div>`;
+}
+
+/* ---------- 개인 화면 ---------- */
+async function renderPersonal(){
+  const app = document.getElementById('app');
+  if(!myPlayerId){
+    const state = await loadState();
+    app.innerHTML = `<div class="center-wrap">
+      <div class="topbar"><span class="tag">방: ${roomId}</span><button class="back" onclick="goHome()">← 나가기</button></div>
+      <div class="card">
+        <label>내 이름 선택</label>
+        <select id="playerSelect"><option value="">-- 선택 --</option>
+          ${Object.entries(state.players).map(([id,p])=>`<option value="${id}">${p.name}</option>`).join('')}
+        </select>
+        <div class="hint">이름이 없다면 게임마스터에게 등록을 요청하세요.</div>
+      </div>
+      <button class="btn" style="width:100%" id="enterBtn">입장</button>
+    </div>`;
+    document.getElementById('enterBtn').addEventListener('click', ()=>{
+      const v = document.getElementById('playerSelect').value;
+      if(!v){ alert('이름을 선택하세요'); return; }
+      myPlayerId = v; render();
+    });
+    return;
+  }
+  const app2 = document.getElementById('app');
+  app2.innerHTML = `<div class="center-wrap"><div id="pBody" class="empty">불러오는 중...</div></div>`;
+  const draw = async ()=>{
+    const state = await loadState();
+    const p = state.players[myPlayerId];
+    if(!p){ myPlayerId=null; render(); return; }
+    const phase = currentPhase(state);
+    const holdEntries = STOCKS.map(s=>({s, q:p.holdings[s.id]||0})).filter(x=>x.q>0);
+    document.getElementById('pBody').innerHTML = `
+      <div class="topbar"><span class="tag">${p.name}</span><span class="phase-badge">${gameClockDisplay(state)}</span><button class="back" onclick="goHome()">← 나가기</button></div>
+      <div class="card">
+        <label>보유 현금</label>
+        <div class="asset-total">${fmt(p.cash)}원</div>
+      </div>
+      <div class="card">
+        <label>보유 종목 (종목당 최대 ${MAX_HOLD_PER_STOCK}주)</label>
+        ${holdEntries.length? holdEntries.map(({s,q})=>`
+          <div class="holding-row"><span>${s.name} × ${q}주</span><span style="font-family:var(--mono)">${phase==='ended'?fmt(priceAt(s,state)*q)+'원 (정산완료)':'비공개'}</span></div>
+        `).join('') : '<div class="empty">보유 중인 종목이 없습니다</div>'}
+        <div class="hint">거래는 거래소 화면에서만 가능합니다. 다른 사람은 내 자산을 볼 수 없습니다.</div>
+      </div>
+    `;
+  };
+  await draw();
+  pollTimer = setInterval(draw, 5000);
+}
+
+/* ---------- 거래소 ---------- */
+async function renderExchange(){
+  const app = document.getElementById('app');
+  app.innerHTML = `<div class="wrap"><div id="eBody" class="empty">불러오는 중...</div></div>`;
+  let selectedPlayer = null;
+  let sessionSecLeft = null;
+
+  const startSession = ()=>{
+    sessionSecLeft = EXCHANGE_SESSION_SEC;
+    if(exTimer) clearInterval(exTimer);
+    exTimer = setInterval(()=>{
+      sessionSecLeft -= 1;
+      const el = document.getElementById('timerNum');
+      if(el){
+        el.textContent = sessionSecLeft + '초';
+        el.className = 'timer-ring' + (sessionSecLeft<=10?' warn':'');
+      }
+      if(sessionSecLeft<=0){
+        clearInterval(exTimer); exTimer=null;
+        selectedPlayer = null; sessionSecLeft = null;
+        draw(false);
+      }
+    }, 1000);
+  };
+
+  const draw = async (keepSelect)=>{
+    const state = await loadState();
+    if(!keepSelect){ selectedPlayer = null; if(exTimer){clearInterval(exTimer); exTimer=null;} sessionSecLeft=null; }
+    const phase = currentPhase(state);
+    const tradable = (phase==='round1' || phase==='round2');
+    const playerOptions = Object.entries(state.players).map(([id,p])=>`<option value="${id}" ${selectedPlayer===id?'selected':''}>${p.name}</option>`).join('');
+    const p = selectedPlayer? state.players[selectedPlayer] : null;
+
+    document.getElementById('eBody').innerHTML = `
+      <div class="topbar">
+        <span class="tag">거래소 · 방 ${roomId}</span>
+        <span class="phase-badge">${gameClockDisplay(state)} · ${phaseLabel(phase)}</span>
+        <button class="back" onclick="goHome()">← 나가기</button>
+      </div>
+      <div class="card">
+        <div class="row">
+          <div style="flex:1;margin-right:10px;">
+            <label>거래할 참가자 선택 (1인 최대 ${EXCHANGE_SESSION_SEC}초)</label>
+            <select id="exPlayer" ${p?'disabled':''}><option value="">-- 선택 --</option>${playerOptions}</select>
+          </div>
+          ${p? `<div id="timerNum" class="timer-ring">${sessionSecLeft}초</div>` : ''}
+        </div>
+      </div>
+      ${!tradable ? `<div class="empty">지금은 거래 가능한 시간이 아닙니다 (${phaseLabel(phase)})</div>` : ''}
+      ${p && tradable ? `
+        <div class="card row">
+          <div><label style="margin:0">보유 현금</label><div style="font-family:var(--mono);font-size:20px;">${fmt(p.cash)}원</div></div>
+        </div>
+        ${STOCKS.map(s=>{
+          const qty = p.holdings[s.id]||0;
+          const remain = state.remaining[s.id];
+          const price = priceAt(s, state);
+          return `
+          <div class="card">
+            <div class="row"><b>${s.name}</b><span style="font-family:var(--mono)">${fmt(price)}원</span></div>
+            <div class="row"><span class="hint">내 보유 ${qty}/${MAX_HOLD_PER_STOCK}주</span><span class="remain-tag">시장 잔여 ${remain}/${TOTAL_SHARES}주</span></div>
+            <div class="trade-controls">
+              <input type="number" min="1" value="1" id="qty_${s.id}">
+              <button class="btn buy small" data-buy="${s.id}" ${remain<=0 || qty>=MAX_HOLD_PER_STOCK?'disabled':''}>매수</button>
+              <button class="btn sell small" data-sell="${s.id}" ${qty<=0?'disabled':''}>매도</button>
+            </div>
+          </div>`;
+        }).join('')}
+      ` : ''}
+    `;
+    document.getElementById('exPlayer').addEventListener('change', e=>{
+      selectedPlayer = e.target.value || null;
+      if(selectedPlayer) startSession();
+      draw(true);
+    });
+    if(p && tradable){
+      document.querySelectorAll('[data-buy]').forEach(btn=>btn.addEventListener('click', ()=>doTrade('buy', btn.dataset.buy, selectedPlayer, draw)));
+      document.querySelectorAll('[data-sell]').forEach(btn=>btn.addEventListener('click', ()=>doTrade('sell', btn.dataset.sell, selectedPlayer, draw)));
+    }
+  };
+  await draw();
+  pollTimer = setInterval(()=>draw(true), 5000);
+}
+async function doTrade(type, stockId, playerId, redraw){
+  const qtyInput = document.getElementById('qty_'+stockId);
+  const qty = parseInt(qtyInput.value, 10);
+  if(!qty || qty<=0){ alert('수량을 확인하세요'); return; }
+  const s = STOCKS.find(x=>x.id===stockId);
+  const {errorMsg} = await mutateState((state, fail)=>{
+    const phase = currentPhase(state);
+    if(phase!=='round1' && phase!=='round2'){ fail('지금은 거래할 수 없습니다'); return false; }
+    const p = state.players[playerId];
+    if(!p){ fail('참가자를 찾을 수 없습니다'); return false; }
+    const price = priceAt(s, state);
+    if(type==='buy'){
+      const owned = p.holdings[stockId]||0;
+      if(owned+qty > MAX_HOLD_PER_STOCK){ fail(`종목당 최대 ${MAX_HOLD_PER_STOCK}주까지 보유할 수 있습니다`); return false; }
+      if((state.remaining[stockId]||0) < qty){ fail('시장에 남은 주식이 부족합니다'); return false; }
+      const cost = price*qty;
+      if(p.cash < cost){ fail('현금이 부족합니다'); return false; }
+      p.cash -= cost;
+      p.holdings[stockId] = owned + qty;
+      state.remaining[stockId] -= qty;
+      pushLog(state, `${p.name}님이 ${s.name} ${qty}주 매수 (주당 ${fmt(price)}원)`);
+    } else {
+      const owned = p.holdings[stockId]||0;
+      if(owned < qty){ fail('보유 수량이 부족합니다'); return false; }
+      p.holdings[stockId] -= qty;
+      p.cash += price*qty;
+      state.remaining[stockId] += qty;
+      pushLog(state, `${p.name}님이 ${s.name} ${qty}주 매도 (주당 ${fmt(price)}원)`);
+    }
+  });
+  if(errorMsg) alert(errorMsg);
+  redraw(true);
+}
+
+/* ---------- 게임마스터 ---------- */
+function eventsToText(events){
+  return (events||[]).map(e=>`${e.minute},${STOCKS.find(s=>s.id===e.stockId)?.name||''},${e.delta}`).join('\n');
+}
+function parseEvents(text){
+  return text.split('\n').map(l=>l.trim()).filter(Boolean).filter(l=>!l.startsWith('#')).map(line=>{
+    const parts = line.split(',').map(s=>s.trim());
+    if(parts.length<3) return null;
+    const minute = parseInt(parts[0],10);
+    const name = parts[1];
+    const delta = parseInt(parts[2],10);
+    const stock = STOCKS.find(s=>s.name===name);
+    if(!stock || isNaN(minute) || isNaN(delta)) return null;
+    return {minute, stockId: stock.id, delta};
+  }).filter(Boolean);
+}
+async function renderAdmin(){
+  const app = document.getElementById('app');
+  app.innerHTML = `<div class="wrap"><div id="aBody" class="empty">불러오는 중...</div></div>`;
+  const draw = async ()=>{
+    const state = await loadState();
+    const phase = currentPhase(state);
+    document.getElementById('aBody').innerHTML = `
+      <div class="topbar"><span class="tag">게임마스터 · 방 ${roomId}</span><span class="phase-badge">${gameClockDisplay(state)} · ${phaseLabel(phase)}</span><button class="back" onclick="goHome()">← 나가기</button></div>
+
+      <div class="card">
+        <label>참가자 등록 (쉼표로 구분, 시작자금 ${fmt(START_CASH)}원)</label>
+        <input type="text" id="newNames" placeholder="예: 플레이어1,플레이어2,플레이어3">
+        <button class="btn" id="addPlayers" style="margin-top:8px;width:100%;">등록</button>
+        <div class="hint">현재 참가자 ${Object.keys(state.players).length}명</div>
+      </div>
+
+      <div class="card">
+        <label>1라운드 주가변동표 (형식: 분,종목명,증감액 — 한 줄에 하나, 24개)</label>
+        <textarea id="ev1" placeholder="5,지각통신,300&#10;5,헌금은행,-200&#10;10,철야전자,150">${eventsToText(state.events.round1)}</textarea>
+        <label style="margin-top:12px;">2라운드 주가변동표</label>
+        <textarea id="ev2" placeholder="5,설교건설,-300&#10;10,졸음생명,400">${eventsToText(state.events.round2)}</textarea>
+        <button class="btn" id="saveEvents" style="margin-top:8px;width:100%;">변동표 저장</button>
+        <div class="hint">종목명: ${STOCKS.map(s=>s.name).join(', ')}. 라운드가 시작되면 실제 경과 시간이 입력한 분(分)에 도달할 때 자동으로 가격이 바뀝니다.</div>
+      </div>
+
+      <div class="card">
+        <label>라운드 진행 (1라운드 1:00~1:30 · 2라운드 1:30~2:00, 각 30분 고정)</label>
+        <div class="grid2">
+          <button class="btn" id="startR1" ${state.round1Start?'disabled':''}>1라운드 시작 (1:00)</button>
+          <button class="btn" id="startR2" ${!(phase==='intermission')?'disabled':''}>2라운드 시작 (1:30)</button>
+        </div>
+        <button class="btn" id="settleBtn" style="width:100%;margin-top:10px;" ${phase!=='round2_over'?'disabled':''}>게임 정산하기 (보유주식 → 현금)</button>
+        <div class="hint">버튼을 누르는 시점이 곧 "1시 정각(또는 1시 30분)"으로 표시되고, 정확히 30분 뒤 자동으로 종료됩니다. 변동표의 "분"은 각 라운드 시작 시각(1:00 또는 1:30) 기준 경과분입니다. 거래소 1인당 이용시간은 20초입니다.</div>
+      </div>
+
+      <div class="card">
+        <label>위험 구역</label>
+        <button class="btn ghost" id="resetGame">게임 전체 초기화</button>
+      </div>
+
+      <div class="card">
+        <label>최근 로그</label>
+        ${state.log.length? state.log.slice(0,12).map(l=>`<div class="log-item">${l.text}</div>`).join('') : '<div class="empty">기록 없음</div>'}
+      </div>
+    `;
+
+    document.getElementById('addPlayers').addEventListener('click', async ()=>{
+      const raw = document.getElementById('newNames').value.trim();
+      if(!raw) return;
+      const names = raw.split(',').map(s=>s.trim()).filter(Boolean);
+      const fresh = await loadState();
+      names.forEach(name=>{
+        const id = uid();
+        fresh.players[id] = { name, cash: START_CASH, holdings: {} };
+        pushLog(fresh, `${name}님이 참가했습니다 (시작자금 ${fmt(START_CASH)}원)`);
+      });
+      await saveState(fresh);
+      draw();
+    });
+
+    document.getElementById('saveEvents').addEventListener('click', async ()=>{
+      const fresh = await loadState();
+      fresh.events.round1 = parseEvents(document.getElementById('ev1').value);
+      fresh.events.round2 = parseEvents(document.getElementById('ev2').value);
+      pushLog(fresh, `주가변동표가 저장되었습니다 (1R ${fresh.events.round1.length}건 / 2R ${fresh.events.round2.length}건)`);
+      await saveState(fresh);
+      draw();
+    });
+
+    document.getElementById('startR1').addEventListener('click', async ()=>{
+      const fresh = await loadState();
+      if(fresh.round1Start) return;
+      fresh.round1Duration = DEFAULT_ROUND_MIN;
+      fresh.round1Start = Date.now();
+      pushLog(fresh, `1라운드가 시작되었습니다 (1:00 ~ 1:30)`);
+      await saveState(fresh);
+      draw();
+    });
+    document.getElementById('startR2').addEventListener('click', async ()=>{
+      const fresh = await loadState();
+      if(fresh.round2Start) return;
+      fresh.round2Duration = DEFAULT_ROUND_MIN;
+      fresh.round2Start = Date.now();
+      pushLog(fresh, `2라운드가 시작되었습니다 (1:30 ~ 2:00)`);
+      await saveState(fresh);
+      draw();
+    });
+    document.getElementById('settleBtn').addEventListener('click', async ()=>{
+      const fresh = await loadState();
+      if(currentPhase(fresh)!=='round2_over') return;
+      Object.values(fresh.players).forEach(p=>{
+        STOCKS.forEach(s=>{
+          const q = p.holdings[s.id]||0;
+          if(q>0){ p.cash += q * priceAtElapsed(s, fresh, 2, round2Dur(fresh)); p.holdings[s.id]=0; }
+        });
+      });
+      fresh.settled = true;
+      pushLog(fresh, `게임이 정산되었습니다`);
+      await saveState(fresh);
+      draw();
+    });
+    document.getElementById('resetGame').addEventListener('click', async ()=>{
+      if(!confirm('정말 게임을 초기화할까요? 모든 참가자와 기록이 사라집니다.')) return;
+      await saveState(defaultState());
+      draw();
+    });
+  };
+  await draw();
+  pollTimer = setInterval(draw, 6000);
+}
+
+render();
+</script>
+</body>
+</html>
