@@ -62,7 +62,7 @@
   .asset-total{font-family:var(--mono);font-size:34px;font-weight:700;margin:4px 0;}
   .hint{font-size:12px;color:var(--txt3);margin-top:6px;line-height:1.5;}
   .holding-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;}
-  .trade-controls{display:flex;gap:8px;margin-top:8px;align-items:center;}
+  .trade-controls{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;}
   .trade-controls input{width:64px;text-align:center;}
   .log-item{font-size:12px;color:var(--txt3);padding:4px 0;border-bottom:1px dashed var(--line);}
   .empty{color:var(--txt3);font-size:13px;text-align:center;padding:20px;}
@@ -77,6 +77,13 @@
   .name-chip{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:6px 8px 6px 14px;font-size:13px;margin:4px 4px 0 0;}
   .name-chip button{background:none;border:none;color:var(--txt3);font-size:14px;line-height:1;padding:2px 4px;}
   .name-wrap{display:flex;flex-wrap:wrap;margin-top:4px;}
+  .stepper{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  .step-btn{background:var(--panel2);color:var(--txt);border:none;width:36px;height:36px;font-size:18px;font-weight:700;}
+  .step-btn:disabled{opacity:.3;}
+  .stepper-val{width:34px;text-align:center;font-family:var(--mono);font-size:15px;font-weight:700;}
+  .holding-summary{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .hs-chip{font-size:12px;padding:5px 10px;border-radius:14px;background:var(--panel2);color:var(--txt3);border:1px solid var(--line);}
+  .hs-chip.hs-has{color:var(--amber);border-color:var(--amber-d);background:var(--amber-d);}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
@@ -96,6 +103,9 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+let serverTimeOffset = 0;
+db.ref('.info/serverTimeOffset').on('value', snap=>{ serverTimeOffset = snap.val() || 0; });
+function serverNow(){ return Date.now() + serverTimeOffset; }
 
 const STOCKS = [
   {id:'s1', name:'지각통신'},
@@ -233,7 +243,7 @@ function pushLog(state, text){
 function elapsedMin(startTs, durationMin){
   if(!startTs) return 0;
   const dur = durationMin || DEFAULT_ROUND_MIN;
-  const realElapsed = (Date.now()-startTs)/60000; // 실제 경과(분), 압축 없이 그대로 사용
+  const realElapsed = (serverNow()-startTs)/60000; // 실제 경과(분), 서버시각 기준
   return Math.min(dur, realElapsed);
 }
 function round1Elapsed(state){ return elapsedMin(state.round1Start, state.round1Duration); }
@@ -497,6 +507,7 @@ async function renderExchange(){
   app.innerHTML = `<div class="wrap"><div id="eBody" class="empty">불러오는 중...</div></div>`;
   let selectedPlayer = null;
   let sessionSecLeft = null;
+  let qtyState = {};
 
   const startSession = ()=>{
     sessionSecLeft = EXCHANGE_SESSION_SEC;
@@ -510,7 +521,7 @@ async function renderExchange(){
       }
       if(sessionSecLeft<=0){
         clearInterval(exTimer); exTimer=null;
-        selectedPlayer = null; sessionSecLeft = null;
+        selectedPlayer = null; sessionSecLeft = null; qtyState = {};
         draw(false);
       }
     }, 1000);
@@ -549,19 +560,29 @@ async function renderExchange(){
       </div>
       ${!tradable ? `<div class="empty">지금은 거래 가능한 시간이 아닙니다 (${phaseLabel(phase)})</div>` : ''}
       ${p && tradable ? `
-        <div class="card row">
-          <div><label style="margin:0">${p.name} · 보유 현금</label><div style="font-family:var(--mono);font-size:20px;">${fmt(p.cash)}원</div></div>
+        <div class="card">
+          <label style="margin:0">${p.name} · 보유 현금</label>
+          <div class="asset-total">${fmt(p.cash)}원</div>
+          <div class="holding-summary">
+            ${STOCKS.map(s=>`<span class="hs-chip ${(p.holdings[s.id]||0)>0?'hs-has':''}">${s.name} ${p.holdings[s.id]||0}주</span>`).join('')}
+          </div>
         </div>
         ${STOCKS.map(s=>{
           const qty = p.holdings[s.id]||0;
           const remain = state.remaining[s.id];
           const price = priceAt(s, state);
+          const curQty = qtyState[s.id] || 1;
+          const maxQty = Math.max(1, Math.min(remain, MAX_HOLD_PER_STOCK - qty, MAX_HOLD_PER_STOCK));
           return `
           <div class="card">
             <div class="row"><b>${s.name}</b><span style="font-family:var(--mono)">${fmt(price)}원</span></div>
             <div class="row"><span class="hint">내 보유 ${qty}/${MAX_HOLD_PER_STOCK}주</span><span class="remain-tag">시장 잔여 ${remain}/${TOTAL_SHARES}주</span></div>
             <div class="trade-controls">
-              <input type="number" min="1" value="1" id="qty_${s.id}">
+              <div class="stepper">
+                <button class="step-btn" data-dec="${s.id}" ${curQty<=1?'disabled':''}>−</button>
+                <span class="stepper-val" id="qtyval_${s.id}">${curQty}</span>
+                <button class="step-btn" data-inc="${s.id}" ${curQty>=maxQty?'disabled':''}>+</button>
+              </div>
               <button class="btn buy small" data-buy="${s.id}" ${remain<=0 || qty>=MAX_HOLD_PER_STOCK?'disabled':''}>매수</button>
               <button class="btn sell small" data-sell="${s.id}" ${qty<=0?'disabled':''}>매도</button>
             </div>
@@ -569,10 +590,27 @@ async function renderExchange(){
         }).join('')}
       ` : ''}
     `;
+    if(p && tradable){
+      document.querySelectorAll('[data-dec]').forEach(btn=>btn.addEventListener('click', ()=>{
+        const id = btn.dataset.dec;
+        qtyState[id] = Math.max(1, (qtyState[id]||1)-1);
+        draw(true);
+      }));
+      document.querySelectorAll('[data-inc]').forEach(btn=>btn.addEventListener('click', ()=>{
+        const id = btn.dataset.inc;
+        const s = STOCKS.find(x=>x.id===id);
+        const qty = p.holdings[id]||0;
+        const remain = state.remaining[id];
+        const maxQty = Math.max(1, Math.min(remain, MAX_HOLD_PER_STOCK - qty, MAX_HOLD_PER_STOCK));
+        qtyState[id] = Math.min(maxQty, (qtyState[id]||1)+1);
+        draw(true);
+      }));
+    }
     if(!p){
       document.querySelectorAll('[data-pid]').forEach(btn=>{
         btn.addEventListener('click', ()=>{
           selectedPlayer = btn.dataset.pid;
+          qtyState = {};
           startSession();
           draw(true);
         });
@@ -580,21 +618,26 @@ async function renderExchange(){
     } else {
       document.getElementById('switchPlayer').addEventListener('click', ()=>{
         selectedPlayer = null;
+        qtyState = {};
         if(exTimer){ clearInterval(exTimer); exTimer=null; } sessionSecLeft=null;
         draw(false);
       });
     }
     if(p && tradable){
-      document.querySelectorAll('[data-buy]').forEach(btn=>btn.addEventListener('click', ()=>doTrade('buy', btn.dataset.buy, selectedPlayer, draw)));
-      document.querySelectorAll('[data-sell]').forEach(btn=>btn.addEventListener('click', ()=>doTrade('sell', btn.dataset.sell, selectedPlayer, draw)));
+      document.querySelectorAll('[data-buy]').forEach(btn=>btn.addEventListener('click', ()=>{
+        const id = btn.dataset.buy;
+        doTrade('buy', id, selectedPlayer, qtyState[id]||1, draw);
+      }));
+      document.querySelectorAll('[data-sell]').forEach(btn=>btn.addEventListener('click', ()=>{
+        const id = btn.dataset.sell;
+        doTrade('sell', id, selectedPlayer, qtyState[id]||1, draw);
+      }));
     }
   };
   await draw();
   pollTimer = setInterval(()=>draw(true), 5000);
 }
-async function doTrade(type, stockId, playerId, redraw){
-  const qtyInput = document.getElementById('qty_'+stockId);
-  const qty = parseInt(qtyInput.value, 10);
+async function doTrade(type, stockId, playerId, qty, redraw){
   if(!qty || qty<=0){ alert('수량을 확인하세요'); return; }
   const s = STOCKS.find(x=>x.id===stockId);
   const {errorMsg} = await mutateState((state, fail)=>{
@@ -744,7 +787,7 @@ async function renderAdmin(){
       if(!fresh){ alert('서버 연결 실패. 다시 시도해주세요.'); return; }
       if(fresh.round1Start) return;
       fresh.round1Duration = DEFAULT_ROUND_MIN;
-      fresh.round1Start = Date.now();
+      fresh.round1Start = serverNow();
       pushLog(fresh, `1라운드가 시작되었습니다 (1:00 ~ 1:30)`);
       await saveState(fresh);
       draw();
@@ -754,7 +797,7 @@ async function renderAdmin(){
       if(!fresh){ alert('서버 연결 실패. 다시 시도해주세요.'); return; }
       if(fresh.round2Start) return;
       fresh.round2Duration = DEFAULT_ROUND_MIN;
-      fresh.round2Start = Date.now();
+      fresh.round2Start = serverNow();
       pushLog(fresh, `2라운드가 시작되었습니다 (1:30 ~ 2:00)`);
       await saveState(fresh);
       draw();
