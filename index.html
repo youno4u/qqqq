@@ -252,11 +252,10 @@ function round1Dur(state){ return state.round1Duration || DEFAULT_ROUND_MIN; }
 function round2Dur(state){ return state.round2Duration || DEFAULT_ROUND_MIN; }
 
 function currentPhase(state){
+  if(state.settled) return 'ended';
   if(!state.round1Start) return 'setup';
-  if(round1Elapsed(state) < round1Dur(state)) return 'round1';
-  if(!state.round2Start) return 'intermission';
-  if(round2Elapsed(state) < round2Dur(state)) return 'round2';
-  return state.settled ? 'ended' : 'round2_over';
+  if(!state.round2Start) return 'round1'; // 게임마스터가 "2라운드 시작"을 누르기 전까지는 계속 1라운드(거래 가능)
+  return 'round2'; // 게임마스터가 "정산하기"를 누르기 전까지는 계속 2라운드(거래 가능)
 }
 
 function priceAtElapsed(stock, state, roundNum, minutes){
@@ -279,9 +278,8 @@ function priceAt(stock, state){
   const phase = currentPhase(state);
   if(phase==='setup') return START_PRICE;
   if(phase==='round1') return priceAtElapsed(stock, state, 1, round1Elapsed(state));
-  if(phase==='intermission') return round1FinalPrice(stock, state);
   if(phase==='round2') return priceAtElapsed(stock, state, 2, round2Elapsed(state));
-  return priceAtElapsed(stock, state, 2, round2Dur(state)); // round2_over / ended
+  return priceAtElapsed(stock, state, 2, round2Dur(state)); // ended
 }
 function previousPrice(stock, state){
   const phase = currentPhase(state);
@@ -299,13 +297,12 @@ function gameClockDisplay(state){
   const phase = currentPhase(state);
   if(phase==='setup') return '1시 00분 대기중';
   if(phase==='round1') return clockLabel(1,0, round1Elapsed(state));
-  if(phase==='intermission') return '1시 30분 (휴식)';
   if(phase==='round2') return clockLabel(1,30, round2Elapsed(state));
   return '2시 00분';
 }
 function phaseLabel(phase){
-  return {setup:'게임 대기 중', round1:'1라운드 진행 중', intermission:'인터미션 · 2라운드 준비',
-    round2:'2라운드 진행 중', round2_over:'2라운드 종료 · 정산 대기', ended:'게임 종료'}[phase] || phase;
+  return {setup:'게임 대기 중', round1:'1라운드 진행 중(거래 가능)',
+    round2:'2라운드 진행 중(거래 가능)', ended:'게임 종료'}[phase] || phase;
 }
 function totalAssets(p, state){
   let total = p.cash;
@@ -723,13 +720,13 @@ async function renderAdmin(){
       </div>
 
       <div class="card">
-        <label>라운드 진행 (1라운드 1:00~1:30 · 2라운드 1:30~2:00, 각 30분 고정)</label>
+        <label>라운드 진행 (거래 가능 여부는 이 버튼들로만 결정됩니다 — 기기 시계와 무관)</label>
         <div class="grid2">
           <button class="btn" id="startR1" ${state.round1Start?'disabled':''}>1라운드 시작 (1:00)</button>
-          <button class="btn" id="startR2" ${!(phase==='intermission')?'disabled':''}>2라운드 시작 (1:30)</button>
+          <button class="btn" id="startR2" ${phase!=='round1'?'disabled':''}>2라운드 시작 (1:30)</button>
         </div>
-        <button class="btn" id="settleBtn" style="width:100%;margin-top:10px;" ${phase!=='round2_over'?'disabled':''}>게임 정산하기 (보유주식 → 현금)</button>
-        <div class="hint">버튼을 누르는 시점이 곧 "1시 정각(또는 1시 30분)"으로 표시되고, 정확히 30분 뒤 자동으로 종료됩니다. 변동표의 "분"은 각 라운드 시작 시각(1:00 또는 1:30) 기준 경과분입니다. 거래소 1인당 이용시간은 20초입니다.</div>
+        <button class="btn" id="settleBtn" style="width:100%;margin-top:10px;" ${phase!=='round2'?'disabled':''}>게임 정산하기 (보유주식 → 현금)</button>
+        <div class="hint">"거래할 수 없습니다" 오류는 더 이상 시간 계산 때문에 뜨지 않습니다. 1라운드 시작을 누르면 2라운드 시작을 누르기 전까지 계속 거래 가능하고, 2라운드도 정산하기를 누르기 전까지 계속 거래 가능합니다. 시계·타이머는 참고용 표시일 뿐입니다. 목표 시간(1:00~1:30~2:00)에 맞춰 직접 다음 버튼을 눌러주세요. 거래소 1인당 이용시간은 20초입니다.</div>
       </div>
 
       <div class="card">
@@ -805,7 +802,7 @@ async function renderAdmin(){
     document.getElementById('settleBtn').addEventListener('click', async ()=>{
       const fresh = await loadState();
       if(!fresh){ alert('서버 연결 실패. 다시 시도해주세요.'); return; }
-      if(currentPhase(fresh)!=='round2_over') return;
+      if(currentPhase(fresh)!=='round2') return;
       Object.values(fresh.players).forEach(p=>{
         STOCKS.forEach(s=>{
           const q = p.holdings[s.id]||0;
