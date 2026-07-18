@@ -176,6 +176,16 @@ function roomRef(){ return db.ref('rooms/'+roomId); }
 function normalizeState(val){
   const base = defaultState();
   if(!val) return base;
+  const rawPlayers = (val.players && typeof val.players==='object') ? val.players : {};
+  const players = {};
+  Object.keys(rawPlayers).forEach(id=>{
+    const rp = rawPlayers[id] || {};
+    players[id] = {
+      name: rp.name || '이름없음',
+      cash: (typeof rp.cash === 'number') ? rp.cash : START_CASH,
+      holdings: (rp.holdings && typeof rp.holdings==='object') ? rp.holdings : {}
+    };
+  });
   return {
     round1Start: val.round1Start||null,
     round2Start: val.round2Start||null,
@@ -187,7 +197,7 @@ function normalizeState(val){
       round2: Array.isArray(val.events && val.events.round2) ? val.events.round2 : base.events.round2,
     },
     remaining: (val.remaining && typeof val.remaining==='object') ? val.remaining : base.remaining,
-    players: (val.players && typeof val.players==='object') ? val.players : {},
+    players,
     log: Array.isArray(val.log) ? val.log : []
   };
 }
