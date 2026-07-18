@@ -71,6 +71,12 @@
   .remain-tag{font-size:11px;color:var(--txt3);}
   .rank-row{display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--line);font-size:14px;}
   .winner{color:var(--amber);font-weight:700;}
+  .player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-top:10px;}
+  .player-btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:14px 8px;font-size:14px;font-weight:600;}
+  .player-btn:active{border-color:var(--amber);}
+  .name-chip{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:6px 8px 6px 14px;font-size:13px;margin:4px 4px 0 0;}
+  .name-chip button{background:none;border:none;color:var(--txt3);font-size:14px;line-height:1;padding:2px 4px;}
+  .name-wrap{display:flex;flex-wrap:wrap;margin-top:4px;}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
@@ -379,25 +385,42 @@ function rankingBlockHTML(state){
 }
 
 /* ---------- 개인 화면 ---------- */
+function myIdKey(){ return 'ssm_pid_'+roomId; }
+function getSavedMyId(){ try{ return localStorage.getItem(myIdKey()); }catch(e){ return null; } }
+function setSavedMyId(id){ try{ localStorage.setItem(myIdKey(), id); }catch(e){} }
+function clearSavedMyId(){ try{ localStorage.removeItem(myIdKey()); }catch(e){} }
+
 async function renderPersonal(){
   const app = document.getElementById('app');
   if(!myPlayerId){
-    const state = await loadState();
+    const saved = getSavedMyId();
+    if(saved){
+      const state = await loadState();
+      if(state.players[saved]){ myPlayerId = saved; return renderPersonal(); }
+      clearSavedMyId();
+    }
     app.innerHTML = `<div class="center-wrap">
       <div class="topbar"><span class="tag">방: ${roomId}</span><button class="back" onclick="goHome()">← 나가기</button></div>
       <div class="card">
-        <label>내 이름 선택</label>
-        <select id="playerSelect"><option value="">-- 선택 --</option>
-          ${Object.entries(state.players).map(([id,p])=>`<option value="${id}">${p.name}</option>`).join('')}
-        </select>
-        <div class="hint">이름이 없다면 게임마스터에게 등록을 요청하세요.</div>
+        <label>내 이름을 입력하고 참가하세요</label>
+        <input type="text" id="myNameInput" placeholder="예: 홍길동" maxlength="12">
+        <div class="hint">한번 등록하면 이 기기에서는 계속 같은 이름으로 들어옵니다. 시작자금 ${fmt(START_CASH)}원이 바로 지급됩니다.</div>
       </div>
-      <button class="btn" style="width:100%" id="enterBtn">입장</button>
+      <button class="btn" style="width:100%" id="joinBtn">참가하기</button>
     </div>`;
-    document.getElementById('enterBtn').addEventListener('click', ()=>{
-      const v = document.getElementById('playerSelect').value;
-      if(!v){ alert('이름을 선택하세요'); return; }
-      myPlayerId = v; render();
+    document.getElementById('joinBtn').addEventListener('click', async ()=>{
+      const name = document.getElementById('myNameInput').value.trim();
+      if(!name){ alert('이름을 입력하세요'); return; }
+      const btn = document.getElementById('joinBtn');
+      btn.disabled = true; btn.textContent = '참가 중...';
+      const fresh = await loadState();
+      const id = uid();
+      fresh.players[id] = { name, cash: START_CASH, holdings: {} };
+      pushLog(fresh, `${name}님이 참가했습니다 (시작자금 ${fmt(START_CASH)}원)`);
+      await saveState(fresh);
+      setSavedMyId(id);
+      myPlayerId = id;
+      render();
     });
     return;
   }
@@ -406,7 +429,7 @@ async function renderPersonal(){
   const draw = async ()=>{
     const state = await loadState();
     const p = state.players[myPlayerId];
-    if(!p){ myPlayerId=null; render(); return; }
+    if(!p){ myPlayerId=null; clearSavedMyId(); render(); return; }
     const phase = currentPhase(state);
     const holdEntries = STOCKS.map(s=>({s, q:p.holdings[s.id]||0})).filter(x=>x.q>0);
     document.getElementById('pBody').innerHTML = `
@@ -458,7 +481,7 @@ async function renderExchange(){
     if(!keepSelect){ selectedPlayer = null; if(exTimer){clearInterval(exTimer); exTimer=null;} sessionSecLeft=null; }
     const phase = currentPhase(state);
     const tradable = (phase==='round1' || phase==='round2');
-    const playerOptions = Object.entries(state.players).map(([id,p])=>`<option value="${id}" ${selectedPlayer===id?'selected':''}>${p.name}</option>`).join('');
+    const playerEntries = Object.entries(state.players);
     const p = selectedPlayer? state.players[selectedPlayer] : null;
 
     document.getElementById('eBody').innerHTML = `
@@ -469,17 +492,19 @@ async function renderExchange(){
       </div>
       <div class="card">
         <div class="row">
-          <div style="flex:1;margin-right:10px;">
-            <label>거래할 참가자 선택 (1인 최대 ${EXCHANGE_SESSION_SEC}초)</label>
-            <select id="exPlayer" ${p?'disabled':''}><option value="">-- 선택 --</option>${playerOptions}</select>
-          </div>
+          <label style="margin:0;">본인 이름 버튼을 눌러 거래하세요 (1인 최대 ${EXCHANGE_SESSION_SEC}초)</label>
           ${p? `<div id="timerNum" class="timer-ring">${sessionSecLeft}초</div>` : ''}
         </div>
+        ${p? `<button class="btn ghost small" id="switchPlayer" style="margin-top:8px;">다른 사람으로 전환</button>` : `
+          <div class="player-grid">
+            ${playerEntries.length? playerEntries.map(([id,pl])=>`<button class="player-btn" data-pid="${id}">${pl.name}</button>`).join('') : '<div class="empty">등록된 참가자가 없습니다. 개인 화면에서 먼저 참가해야 합니다.</div>'}
+          </div>
+        `}
       </div>
       ${!tradable ? `<div class="empty">지금은 거래 가능한 시간이 아닙니다 (${phaseLabel(phase)})</div>` : ''}
       ${p && tradable ? `
         <div class="card row">
-          <div><label style="margin:0">보유 현금</label><div style="font-family:var(--mono);font-size:20px;">${fmt(p.cash)}원</div></div>
+          <div><label style="margin:0">${p.name} · 보유 현금</label><div style="font-family:var(--mono);font-size:20px;">${fmt(p.cash)}원</div></div>
         </div>
         ${STOCKS.map(s=>{
           const qty = p.holdings[s.id]||0;
@@ -498,11 +523,21 @@ async function renderExchange(){
         }).join('')}
       ` : ''}
     `;
-    document.getElementById('exPlayer').addEventListener('change', e=>{
-      selectedPlayer = e.target.value || null;
-      if(selectedPlayer) startSession();
-      draw(true);
-    });
+    if(!p){
+      document.querySelectorAll('[data-pid]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          selectedPlayer = btn.dataset.pid;
+          startSession();
+          draw(true);
+        });
+      });
+    } else {
+      document.getElementById('switchPlayer').addEventListener('click', ()=>{
+        selectedPlayer = null;
+        if(exTimer){ clearInterval(exTimer); exTimer=null; } sessionSecLeft=null;
+        draw(false);
+      });
+    }
     if(p && tradable){
       document.querySelectorAll('[data-buy]').forEach(btn=>btn.addEventListener('click', ()=>doTrade('buy', btn.dataset.buy, selectedPlayer, draw)));
       document.querySelectorAll('[data-sell]').forEach(btn=>btn.addEventListener('click', ()=>doTrade('sell', btn.dataset.sell, selectedPlayer, draw)));
@@ -571,10 +606,15 @@ async function renderAdmin(){
       <div class="topbar"><span class="tag">게임마스터 · 방 ${roomId}</span><span class="phase-badge">${gameClockDisplay(state)} · ${phaseLabel(phase)}</span><button class="back" onclick="goHome()">← 나가기</button></div>
 
       <div class="card">
-        <label>참가자 등록 (쉼표로 구분, 시작자금 ${fmt(START_CASH)}원)</label>
+        <label>참가자 수동 등록 (쉼표로 구분, 시작자금 ${fmt(START_CASH)}원) — 보통은 참가자가 개인화면에서 직접 등록합니다</label>
         <input type="text" id="newNames" placeholder="예: 플레이어1,플레이어2,플레이어3">
         <button class="btn" id="addPlayers" style="margin-top:8px;width:100%;">등록</button>
-        <div class="hint">현재 참가자 ${Object.keys(state.players).length}명</div>
+        <label style="margin-top:14px;">등록된 참가자 (${Object.keys(state.players).length}명)</label>
+        <div class="name-wrap">
+          ${Object.keys(state.players).length? Object.entries(state.players).map(([id,pl])=>`
+            <span class="name-chip">${pl.name}<button data-delp="${id}" title="삭제">✕</button></span>
+          `).join('') : '<div class="empty">아직 등록된 참가자가 없습니다</div>'}
+        </div>
       </div>
 
       <div class="card">
@@ -619,6 +659,19 @@ async function renderAdmin(){
       });
       await saveState(fresh);
       draw();
+    });
+
+    document.querySelectorAll('[data-delp]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.delp;
+        const fresh = await loadState();
+        const name = fresh.players[id] ? fresh.players[id].name : '참가자';
+        if(!confirm(`${name}님을 삭제할까요? 보유 자산 기록도 함께 사라집니다.`)) return;
+        delete fresh.players[id];
+        pushLog(fresh, `${name}님이 삭제되었습니다`);
+        await saveState(fresh);
+        draw();
+      });
     });
 
     document.getElementById('saveEvents').addEventListener('click', async ()=>{
