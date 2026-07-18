@@ -6,85 +6,96 @@
 <title>폭풍의 증권시장</title>
 <style>
   :root{
-    --bg:#0B0E13; --panel:#12161D; --panel2:#181D26; --line:#262C38;
-    --txt:#E8EAED; --txt2:#8A93A3; --txt3:#5B6472;
-    --up:#2ECC71; --down:#E85D4A; --amber:#F0A93C; --amber-d:#3A2A10;
-    --mono:'SF Mono','Consolas',monospace;
+    --bg:#0A0714; --panel:#15102A; --panel2:#1D1638; --line:#332853;
+    --txt:#F5F0FF; --txt2:#B0A3D6; --txt3:#756A96;
+    --up:#3DDC84; --down:#FF4D5E; --amber:#FFC93C; --amber-d:#3D2F0A;
+    --mono:'Orbitron','SF Mono',monospace;
   }
   *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,'Pretendard','Malgun Gothic',sans-serif;}
+  html,body{height:100%;}
+  body{
+    margin:0;color:var(--txt);font-family:-apple-system,'Pretendard','Malgun Gothic',sans-serif;
+    background:
+      radial-gradient(700px 500px at 8% -5%, rgba(34,228,255,.16), transparent 60%),
+      radial-gradient(650px 550px at 100% 0%, rgba(255,79,166,.14), transparent 55%),
+      radial-gradient(800px 600px at 50% 100%, rgba(177,92,255,.14), transparent 60%),
+      var(--bg);
+    background-attachment:fixed;
+  }
   button{font-family:inherit;cursor:pointer;}
   textarea,input,select{font-family:inherit;}
   .wrap{max-width:1100px;margin:0 auto;padding:20px;}
   .center-wrap{max-width:480px;margin:0 auto;padding:20px;}
 
   .landing{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:28px;padding:24px;}
-  .logo{font-size:15px;letter-spacing:6px;color:var(--amber);font-weight:700;}
-  .title{font-size:30px;font-weight:700;margin:0;}
+  .logo{font-size:14px;letter-spacing:6px;color:var(--txt2);font-weight:700;}
+  .title{font-size:34px;font-weight:800;margin:0;background:linear-gradient(90deg,#22E4FF,#B15CFF 45%,#FF4FA6 85%);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:-.5px;filter:drop-shadow(0 0 24px rgba(177,92,255,.35));}
   .sub{color:var(--txt2);font-size:14px;margin-top:-14px;}
   .roomrow{display:flex;gap:8px;align-items:center;}
-  .roomrow input{background:var(--panel);border:1px solid var(--line);color:var(--txt);padding:10px 14px;border-radius:8px;font-size:15px;width:180px;text-align:center;letter-spacing:2px;}
-  .roles{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:420px;}
-  .role-btn{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 10px;color:var(--txt);display:flex;flex-direction:column;align-items:center;gap:8px;}
-  .role-btn:active{border-color:var(--amber);}
-  .role-btn .ico{font-size:26px;}
-  .role-btn .name{font-size:14px;font-weight:600;}
+  .roomrow input{background:var(--panel);border:1px solid var(--line);color:var(--txt);padding:10px 14px;border-radius:10px;font-size:15px;width:180px;text-align:center;letter-spacing:2px;}
+  .roles{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:420px;}
+  .role-btn{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:24px 10px;color:var(--txt);display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 8px 24px -12px rgba(0,0,0,.6);}
+  .role-btn:active{border-color:#B15CFF;box-shadow:0 0 0 2px rgba(177,92,255,.4), 0 8px 24px -12px rgba(0,0,0,.6);}
+  .role-btn .ico{font-size:28px;}
+  .role-btn .name{font-size:14px;font-weight:700;}
   .role-btn .desc{font-size:11px;color:var(--txt3);}
 
   .topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 4px;border-bottom:1px solid var(--line);margin-bottom:18px;gap:8px;flex-wrap:wrap;}
   .topbar .tag{font-size:12px;color:var(--txt3);letter-spacing:1px;}
   .topbar .back{color:var(--txt2);font-size:13px;background:none;border:none;}
-  .phase-badge{background:var(--amber-d);color:var(--amber);font-size:12px;padding:4px 10px;border-radius:20px;font-weight:600;letter-spacing:1px;}
+  .phase-badge{background:linear-gradient(90deg,rgba(255,201,60,.18),rgba(255,201,60,.08));color:var(--amber);font-size:12px;padding:5px 12px;border-radius:20px;font-weight:700;letter-spacing:.5px;border:1px solid rgba(255,201,60,.35);}
 
-  .clock-hero{text-align:center;padding:20px 0 8px;}
-  .clock-num{font-family:var(--mono);font-size:56px;font-weight:700;letter-spacing:2px;}
-  .clock-label{color:var(--txt2);font-size:13px;margin-top:4px;}
+  .clock-hero{text-align:center;padding:22px 0 10px;}
+  .clock-num{font-family:var(--mono);font-size:52px;font-weight:700;letter-spacing:2px;background:linear-gradient(90deg,#22E4FF,#B15CFF);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 20px rgba(34,228,255,.3));}
+  .clock-label{color:var(--txt2);font-size:13px;margin-top:6px;letter-spacing:1px;}
 
-  .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-top:20px;}
-  .stock-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;}
-  .stock-name{font-size:14px;color:var(--txt2);margin-bottom:6px;}
-  .stock-price{font-family:var(--mono);font-size:30px;font-weight:700;}
-  .stock-chg{font-family:var(--mono);font-size:13px;margin-top:4px;}
+  .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:20px;}
+  .stock-card{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-left:5px solid var(--sc,var(--line));border-radius:16px;padding:18px;box-shadow:0 0 32px -14px var(--sc,transparent), 0 10px 24px -16px rgba(0,0,0,.6);}
+  .stock-name{font-size:14px;color:var(--sc,var(--txt2));font-weight:700;margin-bottom:8px;letter-spacing:.3px;}
+  .stock-price{font-family:var(--mono);font-size:28px;font-weight:700;text-shadow:0 0 18px var(--sc,transparent);}
+  .stock-chg{font-family:var(--mono);font-size:13px;margin-top:6px;}
   .up{color:var(--up);} .down{color:var(--down);} .flat{color:var(--txt3);}
 
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px;}
+  .card{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 8px 20px -16px rgba(0,0,0,.6);}
   .row{display:flex;justify-content:space-between;align-items:center;}
   label{font-size:12px;color:var(--txt2);display:block;margin-bottom:6px;}
-  select,input[type=text],input[type=number],textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:10px 12px;border-radius:8px;font-size:14px;}
+  select,input[type=text],input[type=number],textarea{width:100%;background:#0F0A20;border:1px solid var(--line);color:var(--txt);padding:10px 12px;border-radius:10px;font-size:14px;}
   textarea{font-family:var(--mono);font-size:12px;min-height:110px;resize:vertical;}
-  .btn{background:var(--amber);color:#241A05;border:none;border-radius:8px;padding:11px 16px;font-size:14px;font-weight:700;}
-  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt);}
-  .btn.small{padding:7px 12px;font-size:12px;}
-  .btn.buy{background:var(--up);color:#052012;}
-  .btn.sell{background:var(--down);color:#2A0906;}
-  .btn:disabled{opacity:.35;}
+  .btn{background:linear-gradient(90deg,#FFC93C,#FF9D3C);color:#241A05;border:none;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:800;box-shadow:0 6px 18px -8px rgba(255,201,60,.5);}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt);box-shadow:none;}
+  .btn.small{padding:8px 12px;font-size:12px;}
+  .btn.buy{background:linear-gradient(90deg,#3DDC84,#1FBF6C);color:#052012;box-shadow:0 6px 18px -8px rgba(61,220,132,.5);}
+  .btn.sell{background:linear-gradient(90deg,#FF4D5E,#E0263B);color:#2A0906;box-shadow:0 6px 18px -8px rgba(255,77,94,.5);}
+  .btn:disabled{opacity:.3;box-shadow:none;}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  .asset-total{font-family:var(--mono);font-size:34px;font-weight:700;margin:4px 0;}
+  .asset-total{font-family:var(--mono);font-size:32px;font-weight:700;margin:4px 0;color:var(--amber);text-shadow:0 0 20px rgba(255,201,60,.3);}
   .hint{font-size:12px;color:var(--txt3);margin-top:6px;line-height:1.5;}
-  .holding-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;}
+  .holding-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;border-left:3px solid var(--sc,transparent);padding-left:8px;}
   .trade-controls{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;}
   .trade-controls input{width:64px;text-align:center;}
   .log-item{font-size:12px;color:var(--txt3);padding:4px 0;border-bottom:1px dashed var(--line);}
   .empty{color:var(--txt3);font-size:13px;text-align:center;padding:20px;}
-  .timer-ring{font-family:var(--mono);font-size:20px;color:var(--amber);}
+  .timer-ring{font-family:var(--mono);font-size:22px;color:var(--amber);font-weight:700;}
   .timer-ring.warn{color:var(--down);}
   .remain-tag{font-size:11px;color:var(--txt3);}
   .rank-row{display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--line);font-size:14px;}
   .winner{color:var(--amber);font-weight:700;}
-  .player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-top:10px;}
-  .player-btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:14px 8px;font-size:14px;font-weight:600;}
-  .player-btn:active{border-color:var(--amber);}
+  .player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;margin-top:10px;}
+  .player-btn{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:16px 8px;font-size:14px;font-weight:700;}
+  .player-btn:active{border-color:#B15CFF;box-shadow:0 0 0 2px rgba(177,92,255,.4);}
   .name-chip{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:6px 8px 6px 14px;font-size:13px;margin:4px 4px 0 0;}
   .name-chip button{background:none;border:none;color:var(--txt3);font-size:14px;line-height:1;padding:2px 4px;}
   .name-wrap{display:flex;flex-wrap:wrap;margin-top:4px;}
-  .stepper{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
-  .step-btn{background:var(--panel2);color:var(--txt);border:none;width:36px;height:36px;font-size:18px;font-weight:700;}
+  .stepper{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .step-btn{background:var(--panel2);color:var(--txt);border:none;width:38px;height:38px;font-size:19px;font-weight:700;}
   .step-btn:disabled{opacity:.3;}
-  .stepper-val{width:34px;text-align:center;font-family:var(--mono);font-size:15px;font-weight:700;}
+  .stepper-val{width:36px;text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;}
   .holding-summary{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
-  .hs-chip{font-size:12px;padding:5px 10px;border-radius:14px;background:var(--panel2);color:var(--txt3);border:1px solid var(--line);}
-  .hs-chip.hs-has{color:var(--amber);border-color:var(--amber-d);background:var(--amber-d);}
+  .hs-chip{font-size:12px;padding:6px 12px;border-radius:14px;background:var(--panel2);color:var(--txt3);border:1px solid var(--line);font-weight:600;}
+  .hs-chip.hs-has{color:var(--sc,var(--amber));border-color:var(--sc,var(--amber-d));background:color-mix(in srgb, var(--sc,var(--amber)) 16%, var(--panel2));}
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 </head>
@@ -108,11 +119,11 @@ db.ref('.info/serverTimeOffset').on('value', snap=>{ serverTimeOffset = snap.val
 function serverNow(){ return Date.now() + serverTimeOffset; }
 
 const STOCKS = [
-  {id:'s1', name:'지각통신'},
-  {id:'s2', name:'헌금은행'},
-  {id:'s3', name:'철야전자'},
-  {id:'s4', name:'설교건설'},
-  {id:'s5', name:'졸음생명'},
+  {id:'s1', name:'지각통신', color:'#22E4FF'},
+  {id:'s2', name:'헌금은행', color:'#FFC93C'},
+  {id:'s3', name:'철야전자', color:'#B15CFF'},
+  {id:'s4', name:'설교건설', color:'#FF6B4A'},
+  {id:'s5', name:'졸음생명', color:'#FF4FA6'},
 ];
 const START_PRICE = 2000;
 const TOTAL_SHARES = 15;
@@ -391,7 +402,7 @@ async function renderMain(){
           const diff = price - prev;
           const cls = diff>0?'up':diff<0?'down':'flat';
           const arrow = diff>0?'▲':diff<0?'▼':'―';
-          return `<div class="stock-card">
+          return `<div class="stock-card" style="--sc:${s.color}">
             <div class="stock-name">${s.name}</div>
             <div class="stock-price">${fmt(price)}원</div>
             <div class="stock-chg ${cls}">${arrow} ${fmt(Math.abs(diff))}원</div>
@@ -494,7 +505,7 @@ async function renderPersonal(){
       <div class="card">
         <label>보유 종목 (종목당 최대 ${MAX_HOLD_PER_STOCK}주)</label>
         ${holdEntries.length? holdEntries.map(({s,q})=>`
-          <div class="holding-row"><span>${s.name} × ${q}주</span><span style="font-family:var(--mono)">${phase==='ended'?fmt(priceAt(s,state)*q)+'원 (정산완료)':'비공개'}</span></div>
+          <div class="holding-row" style="--sc:${s.color}"><span>${s.name} × ${q}주</span><span style="font-family:var(--mono)">${fmt(priceAt(s,state)*q)}원</span></div>
         `).join('') : '<div class="empty">보유 중인 종목이 없습니다</div>'}
         <div class="hint">거래는 거래소 화면에서만 가능합니다. 다른 사람은 내 자산을 볼 수 없습니다.</div>
       </div>
@@ -567,7 +578,7 @@ async function renderExchange(){
           <label style="margin:0">${p.name} · 보유 현금</label>
           <div class="asset-total">${fmt(p.cash)}원</div>
           <div class="holding-summary">
-            ${STOCKS.map(s=>`<span class="hs-chip ${(p.holdings[s.id]||0)>0?'hs-has':''}">${s.name} ${p.holdings[s.id]||0}주</span>`).join('')}
+            ${STOCKS.map(s=>`<span class="hs-chip ${(p.holdings[s.id]||0)>0?'hs-has':''}" style="--sc:${s.color}">${s.name} ${p.holdings[s.id]||0}주</span>`).join('')}
           </div>
         </div>
         ${STOCKS.map(s=>{
@@ -577,8 +588,8 @@ async function renderExchange(){
           const curQty = qtyState[s.id] || 1;
           const maxQty = Math.max(1, Math.min(remain, MAX_HOLD_PER_STOCK - qty, MAX_HOLD_PER_STOCK));
           return `
-          <div class="card">
-            <div class="row"><b>${s.name}</b><span style="font-family:var(--mono)">${fmt(price)}원</span></div>
+          <div class="stock-card" style="--sc:${s.color};margin-bottom:14px;">
+            <div class="row"><b class="stock-name" style="margin:0;">${s.name}</b><span style="font-family:var(--mono);font-weight:700;">${fmt(price)}원</span></div>
             <div class="row"><span class="hint">내 보유 ${qty}/${MAX_HOLD_PER_STOCK}주</span><span class="remain-tag">시장 잔여 ${remain}/${TOTAL_SHARES}주</span></div>
             <div class="trade-controls">
               <div class="stepper">
